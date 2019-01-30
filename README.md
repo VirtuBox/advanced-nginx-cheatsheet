@@ -268,8 +268,6 @@ server {
 
     root /var/www/domain.tld/htdocs;
 
-    index index.php index.html index.htm;
-
     # pass requests to Apache backend
     location / {
         proxy_pass http://backend;
