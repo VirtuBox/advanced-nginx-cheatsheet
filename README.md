@@ -125,7 +125,6 @@ map $request_uri $uri_no_cache {
     "~*/wp-links-opml.php" 1;
     "~*/wp-.*.php" 1;
     "~*/xmlrpc.php" 1;
-    "=/" 1;
 }
 # do not cache request with args (like site.tld/index.php?id=1)
 map $query_string $query_no_cache {
