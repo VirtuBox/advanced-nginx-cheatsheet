@@ -35,7 +35,6 @@
 
 <!-- /TOC -->
 
-
 ## Nginx Performance
 
 ### Load-Balancing
@@ -45,8 +44,10 @@
 ```nginx
 upstream php {
     least_conn;
-    server unix:/var/run/php-fpm.sock;
-    server unix:/var/run/php-two-fpm.sock;
+
+    server unix:/var/run/php/php-fpm.sock;
+    server unix:/var/run/php/php-two-fpm.sock;
+
     keepalive 5;
 }
 ```
@@ -56,8 +57,10 @@ upstream php {
 ```nginx
 upstream php {
     least_conn;
+
     server 127.0.0.1:9090;
     server 127.0.0.1:9091;
+
     keepalive 5;
 }
 ```
@@ -145,7 +148,7 @@ To put inside another configuration file in /etc/nginx/conf.d
 ```nginx
 # FastCGI cache settings
 fastcgi_cache_path /var/run/nginx-cache levels=1:2 keys_zone=WORDPRESS:360m inactive=24h max_size=256M;
-fastcgi_cache_key "$scheme$request_method$host$request_uri$cookie_pll_language";
+fastcgi_cache_key "$scheme$request_method$host$request_uri";
 fastcgi_cache_use_stale error timeout invalid_header updating http_500 http_503;
 fastcgi_cache_methods GET HEAD;
 fastcgi_buffers 256 32k;
@@ -160,6 +163,12 @@ fastcgi_keep_conn on;
 fastcgi_cache_lock on;
 fastcgi_cache_lock_age 1s;
 fastcgi_cache_lock_timeout 3s;
+```
+
+To work with cookies, you can edit the fastcgi_cache_key. Cookie can be added with variable `$cookie_{COOKIE_NAME}`. For example, the WordPress plugin Polylang use a cookie named `pll_language`, so the directive fastcgi_cache_key would be :
+
+```nginx
+fastcgi_cache_key "$scheme$request_method$host$request_uri$cookie_pll_language";
 ```
 
 #### fastcgi_cache vhost example
@@ -201,7 +210,6 @@ server {
 }
 ```
 
-
 ## Nginx as a Proxy
 
 ### Simple Proxy
@@ -238,8 +246,8 @@ upstream backend {
 }
 # HTTP Server
 server {
-    server_name your_hostname.com;
-    error_log /var/log/nginx/rocketchat.access.log;
+    server_name site.tld;
+    error_log /var/log/nginx/site.tld.access.log;
     location / {
         proxy_pass http://backend;
         proxy_http_version 1.1;
