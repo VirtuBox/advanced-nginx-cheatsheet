@@ -5,33 +5,35 @@
 **Table of content**
 <!-- TOC -->
 
-- [Nginx Performance](#nginx-performance)
-  - [Load-Balancing](#load-balancing)
-    - [php-fpm Unix socket](#php-fpm-unix-socket)
-    - [php-fpm TCP](#php-fpm-tcp)
-    - [HTTP load-balancing](#http-load-balancing)
-  - [WordPress Fastcgi cache](#wordpress-fastcgi-cache)
-    - [mapping fastcgi_cache_bypass conditions](#mapping-fastcgi_cache_bypass-conditions)
-    - [Define fastcgi_cache settings](#define-fastcgi_cache-settings)
-    - [fastcgi_cache vhost example](#fastcgi_cache-vhost-example)
-- [Nginx as a Proxy](#nginx-as-a-proxy)
-  - [Simple Proxy](#simple-proxy)
-  - [Proxy in a subfolder](#proxy-in-a-subfolder)
-  - [Proxy keepalive for websocket](#proxy-keepalive-for-websocket)
-  - [Reverse-Proxy for Apache](#reverse-proxy-for-apache)
-- [Nginx Security](#nginx-security)
-  - [Denying access](#denying-access)
-    - [common backup and archives files](#common-backup-and-archives-files)
-    - [Deny access to hidden files & directory](#deny-access-to-hidden-files--directory)
-  - [Blocking common attacks](#blocking-common-attacks)
-    - [base64 encoded url](#base64-encoded-url)
-    - [javascript eval() url](#javascript-eval-url)
-- [Nginx SEO](#nginx-seo)
-  - [robots.txt location](#robotstxt-location)
-  - [Make a website not indexable](#make-a-website-not-indexable)
-- [Nginx Media](#nginx-media)
-  - [MP4 stream module](#mp4-stream-module)
-  - [WebP images](#webp-images)
+- [advanced-nginx-cheatsheet](#advanced-nginx-cheatsheet)
+    - [Nginx Performance](#nginx-performance)
+        - [Load-Balancing](#load-balancing)
+            - [php-fpm Unix socket](#php-fpm-unix-socket)
+            - [php-fpm TCP](#php-fpm-tcp)
+            - [HTTP load-balancing](#http-load-balancing)
+        - [HTTP/3 QUIC support](#http3-quic-support)
+        - [WordPress Fastcgi cache](#wordpress-fastcgi-cache)
+            - [mapping fastcgi_cache_bypass conditions](#mapping-fastcgi_cache_bypass-conditions)
+            - [Define fastcgi_cache settings](#define-fastcgi_cache-settings)
+            - [fastcgi_cache vhost example](#fastcgi_cache-vhost-example)
+    - [Nginx as a Proxy](#nginx-as-a-proxy)
+        - [Simple Proxy](#simple-proxy)
+        - [Proxy in a subfolder](#proxy-in-a-subfolder)
+        - [Proxy keepalive for websocket](#proxy-keepalive-for-websocket)
+        - [Reverse-Proxy For Apache](#reverse-proxy-for-apache)
+    - [Nginx Security](#nginx-security)
+        - [Denying access](#denying-access)
+            - [common backup and archives files](#common-backup-and-archives-files)
+            - [Deny access to hidden files & directory](#deny-access-to-hidden-files--directory)
+        - [Blocking common attacks](#blocking-common-attacks)
+            - [base64 encoded url](#base64-encoded-url)
+            - [javascript eval() url](#javascript-eval-url)
+    - [Nginx SEO](#nginx-seo)
+        - [robots.txt location](#robotstxt-location)
+        - [Make a website not indexable](#make-a-website-not-indexable)
+    - [Nginx Media](#nginx-media)
+        - [MP4 stream module](#mp4-stream-module)
+        - [WebP images](#webp-images)
 
 <!-- /TOC -->
 
@@ -87,6 +89,88 @@ server {
         proxy_set_header    X-Real-IP       $remote_addr;
         proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
     }
+}
+```
+
+### HTTP/3 QUIC support
+
+HTTP/3 QUIC support is available in Nginx from 1.25.5 release and earlier.
+An SSL library that provides QUIC support such as BoringSSL, LibreSSL, or QuicTLS is recommended to build and run this module. Otherwise, when using the OpenSSL library, OpenSSL compatibility layer will be used that does not support early data.
+
+`reuseport` directive is only available on a single vhost.
+
+```nginx
+# Main virtualhost
+server {
+
+    server_name yoursite.tld;
+
+    # enable http/2
+    http2 on;
+
+    # display http version used in header (optional)
+    more_set_headers "X-protocol : $server_protocol always";
+
+    # Advertise HTTP/3 QUIC support (required)
+    more_set_headers 'Alt-Svc h3=":$server_port"; ma=86400';
+
+    # enable [QUIC address validation](https://datatracker.ietf.org/doc/html/rfc9000#name-address-validation)
+    quic_retry on;
+
+    # Listen on port 443 with HTTP/3 QUIC as default_server
+    listen 443 quic reuseport default_server;
+    listen [::]:443 quic reuseport default_server;
+
+    # listen on port 443 with HTTP/2
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    # enable HSTS with HSTS preloading
+    more_set_headers "Strict-Transport-Security : max-age=31536000; includeSubDomains; preload";
+
+    # SSL certificate
+    ssl_certificate /etc/letsencrypt/live/yoursite.tld/fullchain.pem;
+    ssl_certificate_key     /etc/letsencrypt/live/yoursite.tld/key.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/yoursite.tld/ca.pem;
+
+    # enable SSL Stapling
+    ssl_stapling_verify on;
+}
+# Other virtualhosts
+server {
+
+    server_name othersite.tld;
+
+    # enable http/2
+    http2 on;
+
+    # display http version used in header (optional)
+    more_set_headers "X-protocol : $server_protocol always";
+
+    # Advertise HTTP/3 QUIC support (required)
+    more_set_headers 'Alt-Svc h3=":$server_port"; ma=86400';
+
+    # enable [QUIC address validation](https://datatracker.ietf.org/doc/html/rfc9000#name-address-validation)
+    quic_retry on;
+
+    # Listen on port 443 with HTTP/3 QUIC
+    listen 443 quic;
+    listen [::]:443 quic;
+
+    # listen on port 443 with HTTP/2
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    # enable HSTS with HSTS preloading
+    more_set_headers "Strict-Transport-Security : max-age=31536000; includeSubDomains; preload";
+
+    # SSL certificate
+    ssl_certificate /etc/letsencrypt/live/othersite.tld/fullchain.pem;
+    ssl_certificate_key     /etc/letsencrypt/live/othersite.tld/key.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/othersite.tld/ca.pem;
+
+    # enable SSL Stapling
+    ssl_stapling_verify on;
 }
 ```
 
