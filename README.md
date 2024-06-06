@@ -18,7 +18,7 @@
   - [Simple Proxy](#simple-proxy)
   - [Proxy in a subfolder](#proxy-in-a-subfolder)
   - [Proxy keepalive for websocket](#proxy-keepalive-for-websocket)
-  - [Reverse-Proxy for Apache](#reverse-proxy-configuration-to-handle-static-files-and-pass-other-requests-to-apache)
+  - [Reverse-Proxy for Apache](#reverse-proxy-for-apache)
 - [Nginx Security](#nginx-security)
   - [Denying access](#denying-access)
     - [common backup and archives files](#common-backup-and-archives-files)
