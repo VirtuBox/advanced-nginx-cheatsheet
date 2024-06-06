@@ -235,19 +235,23 @@ To put inside another configuration file in /etc/nginx/conf.d
 fastcgi_cache_path /var/run/nginx-cache levels=1:2 keys_zone=WORDPRESS:360m inactive=24h max_size=256M;
 fastcgi_cache_key "$scheme$request_method$host$request_uri";
 fastcgi_cache_use_stale error timeout invalid_header updating http_500 http_503;
+fastcgi_cache_lock on;
+fastcgi_cache_lock_age 5s;
+fastcgi_cache_lock_timeout 5s;
 fastcgi_cache_methods GET HEAD;
-fastcgi_buffers 256 32k;
-fastcgi_buffer_size 256k;
-fastcgi_connect_timeout 4s;
-fastcgi_send_timeout 120s;
-fastcgi_busy_buffers_size 512k;
-fastcgi_temp_file_write_size 512K;
+fastcgi_cache_background_update on;
+fastcgi_cache_valid 200 24h;
+fastcgi_cache_valid 301 302 30m;
+fastcgi_cache_valid 499 502 503 1m;
+fastcgi_cache_valid 404 1h;
+fastcgi_cache_valid any 1h;
+fastcgi_buffers 16 16k;
+fastcgi_buffer_size 32k;
 fastcgi_param SERVER_NAME $http_host;
 fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
 fastcgi_keep_conn on;
-fastcgi_cache_lock on;
-fastcgi_cache_lock_age 1s;
-fastcgi_cache_lock_timeout 3s;
+# only available with Nginx 1.15.6 and earlier
+fastcgi_socket_keepalive on;
 ```
 
 To work with cookies, you can edit the fastcgi_cache_key. Cookie can be added with variable `$cookie_{COOKIE_NAME}`. For example, the WordPress plugin Polylang use a cookie named `pll_language`, so the directive fastcgi_cache_key would be :
