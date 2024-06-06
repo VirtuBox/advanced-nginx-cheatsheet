@@ -97,7 +97,8 @@ server {
 HTTP/3 QUIC support is available in Nginx from 1.25.5 release and earlier.
 An SSL library that provides QUIC support such as BoringSSL, LibreSSL, or QuicTLS is recommended to build and run this module. Otherwise, when using the OpenSSL library, OpenSSL compatibility layer will be used that does not support early data.
 
-`reuseport` directive is only available on a single vhost.
+- `reuseport` directive is only available on a single vhost.
+- If Nginx isn't built with more_set_headers module, you can use `add_header X-protocol $server_protocol always;` and `add_header Alt-Svc 'h3=":$server_port"; ma=86400';`
 
 ```nginx
 # Main virtualhost
